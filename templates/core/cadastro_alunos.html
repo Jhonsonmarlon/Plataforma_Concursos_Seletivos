@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Cadastro de Alunos - Professor: {{ professor.nome }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Alunos Cadastrados - Professor: {{ professor.nome }}</h4>
+            <a href="{% url 'core:lista_professores' %}" class="btn btn-light btn-sm">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+        <div class="card-body">
+            {% if professor.alunos.all %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>CPF</th>
+                                <th>Data de Nascimento</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for aluno in professor.alunos.all %}
+                            <tr>
+                                <td>{{ aluno.nome }}</td>
+                                <td>{{ aluno.cpf }}</td>
+                                <td>{{ aluno.data_nascimento|date:"d/m/Y" }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'core:editar_aluno' aluno.id %}" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-pencil"></i> Editar
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ aluno.id }}">
+                                            <i class="bi bi-trash"></i> Excluir
+                                        </button>
+                                    </div>
+
+                                    <!-- Modal de Confirmação de Exclusão -->
+                                    <div class="modal fade" id="deleteModal{{ aluno.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Confirmar Exclusão</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    Tem certeza que deseja excluir o aluno <strong>{{ aluno.nome }}</strong>?
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                    <form method="post" action="{% url 'core:excluir_aluno' aluno.id %}">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-center text-muted my-4">Nenhum aluno cadastrado para este professor.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Formulário de Cadastro de Novos Alunos -->
+    <div class="card shadow">
+        <div class="card-header bg-success text-white">
+            <h4 class="mb-0">Cadastrar Novos Alunos</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" id="formAlunos">
+                {% csrf_token %}
+                <div id="alunosContainer">
+                    <div class="aluno-form mb-4">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Nome</label>
+                                <input type="text" name="alunos[0][nome]" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">CPF</label>
+                                <input type="text" name="alunos[0][cpf]" class="form-control cpf-mask" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Data de Nascimento</label>
+                                <input type="date" name="alunos[0][data_nascimento]" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <button type="button" class="btn btn-success" id="btnAdicionarAluno">
+                        <i class="bi bi-plus-lg"></i> Adicionar Aluno
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Salvar Alunos
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Adicione este modal no final do template, antes do bloco extra_js -->
+<div class="modal fade" id="feedbackModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Aviso do Sistema</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="modalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let contadorAlunos = 1;
+    const feedbackModal = new bootstrap.Modal(document.getElementById('feedbackModal'));
+    
+    // Função para aplicar máscara de CPF
+    function aplicarMascaraCPF() {
+        $('.cpf-mask').mask('000.000.000-00');
+    }
+    
+    // Aplicar máscara inicial
+    aplicarMascaraCPF();
+
+    // Adicionar novo aluno
+    document.getElementById('btnAdicionarAluno').addEventListener('click', function() {
+        const container = document.getElementById('alunosContainer');
+        const novoAluno = document.createElement('div');
+        novoAluno.className = 'aluno-form mb-4';
+        novoAluno.innerHTML = `
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">Nome</label>
+                    <input type="text" name="alunos[${contadorAlunos}][nome]" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">CPF</label>
+                    <input type="text" name="alunos[${contadorAlunos}][cpf]" class="form-control cpf-mask" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Data de Nascimento</label>
+                    <input type="date" name="alunos[${contadorAlunos}][data_nascimento]" class="form-control" required>
+                </div>
+                <div class="col-12 mt-2">
+                    <button type="button" class="btn btn-danger btn-sm remover-aluno">
+                        <i class="bi bi-trash"></i> Remover
+                    </button>
+                </div>
+            </div>
+            <hr>
+        `;
+        
+        container.appendChild(novoAluno);
+        contadorAlunos++;
+        
+        // Aplicar máscara ao novo campo de CPF
+        aplicarMascaraCPF();
+    });
+
+    // Remover aluno
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remover-aluno')) {
+            e.target.closest('.aluno-form').remove();
+        }
+    });
+
+    // Atualizar envio do formulário
+    document.getElementById('formAlunos').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch('{% url "core:cadastro_alunos" professor.id %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const modalMessage = document.getElementById('modalMessage');
+            if (data.success) {
+                modalMessage.textContent = 'Alunos cadastrados com sucesso!';
+                modalMessage.className = 'text-success';
+                feedbackModal.show();
+                
+                // Redirecionar após fechar o modal
+                document.getElementById('feedbackModal').addEventListener('hidden.bs.modal', function () {
+                    window.location.href = '{% url "core:lista_alunos" professor.id %}';
+                }, { once: true });
+            } else {
+                modalMessage.textContent = 'Erro ao cadastrar alunos: ' + data.error;
+                modalMessage.className = 'text-danger';
+                feedbackModal.show();
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            const modalMessage = document.getElementById('modalMessage');
+            modalMessage.textContent = 'Erro ao processar a requisição';
+            modalMessage.className = 'text-danger';
+            feedbackModal.show();
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

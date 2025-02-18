@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Dados da Escola - Sistema de Concursos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Dados da Escola</h4>
+        </div>
+        <div class="card-body">
+            {% if escola %}
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5 class="text-muted mb-3">Informações Básicas</h5>
+                        <p><strong>Nome:</strong> {{ escola.nome }}</p>
+                        <p><strong>CEP:</strong> {{ escola.cep }}</p>
+                        <p><strong>Telefone:</strong> {{ escola.telefone }}</p>
+                        <p><strong>Tipo:</strong> {{ escola.get_tipo_display }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="text-muted mb-3">Estatísticas</h5>
+                        <p><strong>Total de Professores:</strong> {{ escola.professores.count }}</p>
+                        <p><strong>Total de Alunos:</strong> {{ escola.professores.all|length }}</p>
+                        <p><strong>Data de Cadastro:</strong> {{ escola.data_cadastro|date:"d/m/Y" }}</p>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAtualizarEscola">
+                        <i class="bi bi-pencil"></i> Atualizar Dados
+                    </button>
+                </div>
+            {% else %}
+                <div class="alert alert-warning">
+                    Nenhuma escola encontrada.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if escola %}
+        <div class="card shadow mt-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Professores Vinculados</h4>
+            </div>
+            <div class="card-body">
+                {% if escola.professores.all %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                    <th>Telefone</th>
+                                    <th>Total de Alunos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for professor in escola.professores.all %}
+                                    <tr>
+                                        <td>{{ professor.nome }}</td>
+                                        <td>{{ professor.email }}</td>
+                                        <td>{{ professor.telefone }}</td>
+                                        <td>{{ professor.alunos.count }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        Nenhum professor cadastrado para esta escola.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal de Atualização -->
+<div class="modal fade" id="modalAtualizarEscola" tabindex="-1" aria-labelledby="modalAtualizarEscolaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalAtualizarEscolaLabel">Atualizar Dados da Escola</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'core:editar_escola' escola.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nome da Escola</label>
+                            {% render_field form.nome class="form-control" placeholder="Nome da escola" value=escola.nome %}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">CEP</label>
+                            {% render_field form.cep class="form-control" placeholder="00000-000" value=escola.cep %}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Telefone</label>
+                            {% render_field form.telefone class="form-control" placeholder="(00) 00000-0000" value=escola.telefone %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Tipo de Escola</label>
+                            <select name="tipo" class="form-select">
+                                <option value="estadual" {% if escola.tipo == 'estadual' %}selected{% endif %}>Estadual Regular</option>
+                                <option value="indigena" {% if escola.tipo == 'indigena' %}selected{% endif %}>Indígena</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

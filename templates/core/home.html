@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Bem-vindo - Sistema de Concursos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center text-center">
+        <div class="col-md-8">
+            <h1 class="display-4 mb-4">Bem-vindo ao Sistema de Concursos</h1>
+            <p class="lead mb-4">
+                Plataforma para inscrição de escolas em concursos educacionais.
+                Cadastre sua escola, professores e alunos de forma simples e organizada.
+            </p>
+            
+            {% if not user.is_authenticated %}
+            <div class="d-grid gap-2 d-md-block">
+                <a href="{% url 'core:registro_gestor' %}" class="btn btn-primary btn-lg me-2">
+                    Registrar Escola
+                </a>
+                <a href="{% url 'login' %}" class="btn btn-outline-primary btn-lg">
+                    Fazer Login
+                </a>
+            </div>
+            {% else %}
+            <div class="d-grid gap-2 d-md-block">
+                <a href="{% url 'core:dashboard' %}" class="btn btn-primary btn-lg">
+                    Ir para o Dashboard
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Escolas - Sistema de Concursos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Lista de Escolas</h4>
+            <a href="{% url 'core:cadastro_escola' %}" class="btn btn-light">
+                <i class="bi bi-plus-lg"></i> Nova Escola
+            </a>
+        </div>
+        <div class="card-body">
+            {% if escolas %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>CEP</th>
+                                <th>Telefone</th>
+                                <th>Tipo</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for escola in escolas %}
+                                <tr>
+                                    <td>{{ escola.nome }}</td>
+                                    <td>{{ escola.cep }}</td>
+                                    <td>{{ escola.telefone }}</td>
+                                    <td>{{ escola.get_tipo_display }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{% url 'core:editar_escola' escola_id=escola.id %}" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-pencil"></i> Editar
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    Nenhuma escola cadastrada.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

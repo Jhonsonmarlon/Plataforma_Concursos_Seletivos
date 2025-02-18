@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Gerenciamento - Sistema de Concursos{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Gerenciamento do Sistema</h4>
+            {% if resultados_filtrados %}
+            <a href="{% url 'core:gerar_pdf' %}?{{ request.GET.urlencode }}" class="btn btn-light" target="_blank">
+                <i class="bi bi-file-pdf"></i> Gerar Relatório PDF
+            </a>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <form method="get" id="filterForm">
+                <div class="row">
+                    <!-- Tipo de Dados -->
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Tipo de Dados</label>
+                        <select name="tipo" class="form-select" id="tipoSelect">
+                            <option value="">Selecione o tipo</option>
+                            <option value="escolas" {% if tipo == 'escolas' %}selected{% endif %}>Escolas</option>
+                            <option value="professores" {% if tipo == 'professores' %}selected{% endif %}>Professores</option>
+                            <option value="alunos" {% if tipo == 'alunos' %}selected{% endif %}>Alunos</option>
+                        </select>
+                    </div>
+
+                    <!-- Filtros específicos para Escolas -->
+                    <div class="col-md-9 mb-3" id="filtrosEscola" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Tipo de Escola</label>
+                                <select name="tipo_escola" class="form-select">
+                                    <option value="">Todos os tipos</option>
+                                    <option value="estadual" {% if tipo_escola == 'estadual' %}selected{% endif %}>Estadual Regular</option>
+                                    <option value="indigena" {% if tipo_escola == 'indigena' %}selected{% endif %}>Indígena</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros específicos para Professores -->
+                    <div class="col-md-9 mb-3" id="filtrosProfessor" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Escola</label>
+                                <select name="escola" class="form-select">
+                                    <option value="">Todas as Escolas</option>
+                                    {% for escola in escolas %}
+                                        <option value="{{ escola.id }}" {% if escola_id == escola.id %}selected{% endif %}>
+                                            {{ escola.nome }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Área de Atuação</label>
+                                <select name="area_atuacao" class="form-select">
+                                    <option value="">Todas as Áreas</option>
+                                    <option value="exatas" {% if area_atuacao == 'exatas' %}selected{% endif %}>Exatas</option>
+                                    <option value="humanas" {% if area_atuacao == 'humanas' %}selected{% endif %}>Humanas</option>
+                                    <option value="biologicas" {% if area_atuacao == 'biologicas' %}selected{% endif %}>Biológicas</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros específicos para Alunos -->
+                    <div class="col-md-9 mb-3" id="filtrosAluno" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Escola</label>
+                                <select name="escola" class="form-select" id="escolaSelect">
+                                    <option value="">Todas as Escolas</option>
+                                    {% for escola in escolas %}
+                                        <option value="{{ escola.id }}" {% if escola_id == escola.id %}selected{% endif %}>
+                                            {{ escola.nome }} {% if escola.is_indigena %}(Indígena){% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Professor</label>
+                                <select name="professor" class="form-select" id="professorSelect" {% if not escola_id %}disabled{% endif %}>
+                                    <option value="">Todos os Professores</option>
+                                    {% if professores_lista %}
+                                        {% for professor in professores_lista %}
+                                            <option value="{{ professor.id }}" {% if professor_id == professor.id %}selected{% endif %}>
+                                                {{ professor.nome }}
+                                            </option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Características</label>
+                                <div class="form-check">
+                                    <input type="checkbox" name="pcd" class="form-check-input" id="alunosPCD" {% if pcd %}checked{% endif %}>
+                                    <label class="form-check-label" for="alunosPCD">PcD</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros de Data -->
+                    <div class="col-md-12 mb-3" id="filtrosData">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label class="form-label">Data Inicial</label>
+                                <input type="date" name="data_inicial" class="form-control" value="{{ data_inicial|date:'Y-m-d' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Data Final</label>
+                                <input type="date" name="data_final" class="form-control" value="{{ data_final|date:'Y-m-d' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Filtrar Dados
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if resultados_filtrados %}
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="dataTable">
+                        {% if tipo == 'escolas' %}
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>CNPJ</th>
+                                    <th>Email</th>
+                                    <th>Telefone</th>
+                                    <th>Total de Professores</th>
+                                    <th>Total de Alunos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for escola in escolas_lista %}
+                                <tr>
+                                    <td>{{ escola.nome }}</td>
+                                    <td>{{ escola.cnpj }}</td>
+                                    <td>{{ escola.email }}</td>
+                                    <td>{{ escola.telefone }}</td>
+                                    <td>{{ escola.professores.count }}</td>
+                                    <td>{{ escola.total_alunos }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        {% elif tipo == 'professores' %}
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>CPF</th>
+                                    <th>Email</th>
+                                    <th>Telefone</th>
+                                    <th>Escola</th>
+                                    <th>Total de Alunos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for professor in professores %}
+                                <tr>
+                                    <td>{{ professor.nome }}</td>
+                                    <td>{{ professor.cpf }}</td>
+                                    <td>{{ professor.email }}</td>
+                                    <td>{{ professor.telefone }}</td>
+                                    <td>{{ professor.escola.nome }}</td>
+                                    <td>{{ professor.alunos.count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        {% elif tipo == 'alunos' %}
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>CPF</th>
+                                    <th>Data de Nascimento</th>
+                                    <th>Professor</th>
+                                    <th>Escola</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for aluno in alunos %}
+                                <tr>
+                                    <td>{{ aluno.nome }}</td>
+                                    <td>{{ aluno.cpf }}</td>
+                                    <td>{{ aluno.data_nascimento|date:"d/m/Y" }}</td>
+                                    <td>{{ aluno.professor.nome }}</td>
+                                    <td>{{ aluno.professor.escola.nome }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Visão Hierárquica do Sistema</h4>
+            <a href="{% url 'core:exportar_hierarquia' %}" class="btn btn-light" target="_blank">
+                <i class="bi bi-file-pdf"></i> Exportar Hierarquia
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="accordion" id="hierarquiaAccordion">
+                {% for escola in escolas_hierarquia %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" 
+                                data-bs-toggle="collapse" data-bs-target="#escola{{ escola.id }}">
+                            <i class="bi bi-building me-2"></i> {{ escola.nome }} 
+                            <span class="badge bg-primary ms-2">{{ escola.get_tipo_display }}</span>
+                        </button>
+                    </h2>
+                    <div id="escola{{ escola.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}">
+                        <div class="accordion-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 30%">Professor</th>
+                                            <th>Alunos Orientados</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for professor in escola.professores.all %}
+                                        <tr class="table-primary">
+                                            <td>
+                                                <i class="bi bi-person-workspace me-2"></i>
+                                                {{ professor.nome }}
+                                            </td>
+                                            <td>
+                                                <table class="table table-sm mb-0">
+                                                    <tbody>
+                                                        {% for aluno in professor.alunos.all %}
+                                                        <tr class="table-info">
+                                                            <td>
+                                                                <i class="bi bi-person me-2"></i>
+                                                                {{ aluno.nome }}
+                                                                {% if aluno.is_pcd %}
+                                                                    <span class="badge bg-warning text-dark">PcD</span>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        {% empty %}
+                                                        <tr>
+                                                            <td class="text-muted">Nenhum aluno orientado</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="2" class="text-center text-muted">
+                                                Nenhum professor cadastrado
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoSelect = document.getElementById('tipoSelect');
+    const filtrosEscola = document.getElementById('filtrosEscola');
+    const filtrosProfessor = document.getElementById('filtrosProfessor');
+    const filtrosAluno = document.getElementById('filtrosAluno');
+    const escolaSelect = document.getElementById('escolaSelect');
+    const professorSelect = document.getElementById('professorSelect');
+
+    // Mostrar/esconder filtros baseado no tipo selecionado
+    function toggleFiltros() {
+        const tipo = tipoSelect.value;
+        filtrosEscola.style.display = tipo === 'escolas' ? 'block' : 'none';
+        filtrosProfessor.style.display = tipo === 'professores' ? 'block' : 'none';
+        filtrosAluno.style.display = tipo === 'alunos' ? 'block' : 'none';
+    }
+
+    tipoSelect.addEventListener('change', toggleFiltros);
+    toggleFiltros(); // Executar na carga inicial
+
+    // Carregar professores quando escola for selecionada
+    escolaSelect.addEventListener('change', function() {
+        const escolaId = this.value;
+        professorSelect.disabled = !escolaId;
+        
+        if (escolaId) {
+            fetch(`/api/professores-por-escola/${escolaId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    professorSelect.innerHTML = '<option value="">Todos os Professores</option>';
+                    data.forEach(professor => {
+                        const option = document.createElement('option');
+                        option.value = professor.id;
+                        option.textContent = professor.nome;
+                        professorSelect.appendChild(option);
+                    });
+                });
+        } else {
+            professorSelect.innerHTML = '<option value="">Todos os Professores</option>';
+        }
+    });
+});
+</script>
+{% endblock %} 

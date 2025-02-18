@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Alunos - {{ professor.nome }} - Sistema de Concursos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Alunos do Professor {{ professor.nome }}</h4>
+            <div>
+                <a href="{% url 'core:lista_professores' %}" class="btn btn-light btn-sm me-2">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+                <a href="{% url 'core:cadastro_alunos' professor.id %}" class="btn btn-light btn-sm">
+                    <i class="bi bi-plus-circle"></i> Novo Aluno
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if alunos %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>CPF</th>
+                                <th>Data de Nascimento</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for aluno in alunos %}
+                            <tr>
+                                <td>{{ aluno.nome }}</td>
+                                <td>{{ aluno.cpf }}</td>
+                                <td>{{ aluno.data_nascimento|date:"d/m/Y" }}</td>
+                                <td>
+                                    <a href="{% url 'core:editar_aluno' aluno.id %}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-pencil"></i> Editar
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-center text-muted my-4">Nenhum aluno cadastrado para este professor.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

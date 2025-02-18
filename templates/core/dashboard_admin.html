@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Dashboard Administrativo{% endblock %}
+
+{% block extra_css %}
+<style>
+    .print-only {
+        display: none;
+    }
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .print-only {
+            display: block;
+        }
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .table {
+            width: 100% !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Dashboard Administrativo</h2>
+        </div>
+    </div>
+
+
+    <!-- Estatísticas Gerais -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total de Escolas</h6>
+                            <h2>{{ total_escolas }}</h2>
+                        </div>
+                        <i class="bi bi-building display-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total de Professores</h6>
+                            <h2>{{ total_professores }}</h2>
+                        </div>
+                        <i class="bi bi-person-workspace display-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total de Alunos</h6>
+                            <h2>{{ total_alunos }}</h2>
+                        </div>
+                        <i class="bi bi-mortarboard display-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Escolas -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Escolas Cadastradas</h5>
+                </div>
+                <div class="card-body">
+                    {% if escolas %}
+                        {% for escola in escolas %}
+                        <div class="escola-item mb-4">
+                            <h5>
+                                <i class="bi bi-building"></i> {{ escola.nome }}
+                                <small class="text-muted">({{ escola.professores.count }} professores)</small>
+                            </h5>
+                            
+                            {% if escola.professores.all %}
+                            <div class="ms-4">
+                                {% for professor in escola.professores.all %}
+                                <div class="professor-item mb-3">
+                                    <h6>
+                                        <i class="bi bi-person"></i> {{ professor.nome }}
+                                        <small class="text-muted">({{ professor.alunos.count }} alunos)</small>
+                                    </h6>
+                                    
+                                    {% if professor.alunos.all %}
+                                    <div class="ms-4">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Nome do Aluno</th>
+                                                        <th>CPF</th>
+                                                        <th>Data de Nascimento</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for aluno in professor.alunos.all %}
+                                                    <tr>
+                                                        <td>{{ aluno.nome }}</td>
+                                                        <td>{{ aluno.cpf }}</td>
+                                                        <td>{{ aluno.data_nascimento }}</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted">Nenhuma escola cadastrada no momento.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resultados -->
+    {% if tipo == 'escolas' %}
+    <div class="card shadow">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Escolas Cadastradas</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>CNPJ</th>
+                            <th>Email</th>
+                            <th>Telefone</th>
+                            <th>Professores</th>
+                            <th>Alunos</th>
+                            <th class="no-print">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for escola in escolas_lista %}
+                        <tr>
+                            <td>{{ escola.nome }}</td>
+                            <td>{{ escola.cnpj }}</td>
+                            <td>{{ escola.email }}</td>
+                            <td>{{ escola.telefone }}</td>
+                            <td>{{ escola.professores.count }}</td>
+                            <td>{{ escola.total_alunos }}</td>
+                            <td class="no-print">
+                                <a href="{% url 'core:editar_escola' escola.id %}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if tipo == 'professores' %}
+    <div class="card shadow">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0">Professores Cadastrados</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>CPF</th>
+                            <th>Email</th>
+                            <th>Telefone</th>
+                            <th>Escola</th>
+                            <th>Alunos</th>
+                            <th class="no-print">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for professor in professores %}
+                        <tr>
+                            <td>{{ professor.nome }}</td>
+                            <td>{{ professor.cpf }}</td>
+                            <td>{{ professor.email }}</td>
+                            <td>{{ professor.telefone }}</td>
+                            <td>{{ professor.escola.nome }}</td>
+                            <td>{{ professor.alunos.count }}</td>
+                            <td class="no-print">
+                                <a href="{% url 'core:editar_professor' professor.id %}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if tipo == 'alunos' %}
+    <div class="card shadow">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0">Alunos Cadastrados</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>CPF</th>
+                            <th>Data de Nascimento</th>
+                            <th>Professor</th>
+                            <th>Escola</th>
+                            <th class="no-print">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for aluno in alunos %}
+                        <tr>
+                            <td>{{ aluno.nome }}</td>
+                            <td>{{ aluno.cpf }}</td>
+                            <td>{{ aluno.data_nascimento|date:"d/m/Y" }}</td>
+                            <td>{{ aluno.professor.nome }}</td>
+                            <td>{{ aluno.professor.escola.nome }}</td>
+                            <td class="no-print">
+                                <a href="{% url 'core:editar_aluno' aluno.id %}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('filterForm').addEventListener('submit', function(e) {
+    const tipoSelect = document.getElementById('tipoSelect');
+    if (!tipoSelect.value) {
+        e.preventDefault();
+        alert('Por favor, selecione um tipo de dados para filtrar.');
+    }
+});
+</script>
+{% endblock %} 

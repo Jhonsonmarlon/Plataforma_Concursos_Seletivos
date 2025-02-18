@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Editar Escola - Sistema de Concursos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Editar Escola</h4>
+            <a href="{% url 'core:lista_escolas' %}" class="btn btn-light btn-sm">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Nome da Escola</label>
+                        {% render_field form.nome class="form-control" placeholder="Nome da escola" %}
+                        {% if form.nome.errors %}
+                            <div class="text-danger">{{ form.nome.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label">CNPJ</label>
+                        {% render_field form.cnpj class="form-control" placeholder="00.000.000/0000-00" %}
+                        {% if form.cnpj.errors %}
+                            <div class="text-danger">{{ form.cnpj.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label">Telefone</label>
+                        {% render_field form.telefone class="form-control" placeholder="(00) 00000-0000" %}
+                        {% if form.telefone.errors %}
+                            <div class="text-danger">{{ form.telefone.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Tipo de Escola</label>
+                        {% render_field form.tipo class="form-select" %}
+                        {% if form.tipo.errors %}
+                            <div class="text-danger">{{ form.tipo.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Atualizar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 
