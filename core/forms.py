@@ -35,7 +35,12 @@ class EscolaForm(forms.ModelForm):
 class ProfessorForm(forms.ModelForm):
     class Meta:
         model = Professor
-        fields = ['nome', 'cpf', 'email', 'telefone']
+        fields = ['nome', 'email', 'telefone']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control'}),
+        }
 
 class AlunoForm(forms.ModelForm):
     class Meta:

@@ -71,11 +71,13 @@ def dashboard(request):
         return render(request, 'core/dashboard_admin.html', context)
     
     try:
-        escola = request.user.escola
+        # Buscar a escola onde o usuário é gestor
+        escola = Escola.objects.get(gestor=request.user)
         context = {
             'escola': escola,
             'total_professores': escola.professores.count(),
             'total_alunos': Aluno.objects.filter(professor__escola=escola).count(),
+            'professores': escola.professores.all()  # Adicionado para listar professores
         }
         return render(request, 'core/dashboard.html', context)
     except Escola.DoesNotExist:
@@ -116,31 +118,43 @@ def cadastro_alunos(request, professor_id):
 
 @login_required
 def cadastro_professor(request):
-    if not hasattr(request.user, 'escola'):
+    try:
+        escola = Escola.objects.get(gestor=request.user)
+        
+        if request.method == 'POST':
+            form = ProfessorForm(request.POST)
+            if form.is_valid():
+                professor = form.save(commit=False)
+                professor.escola = escola  # Associa o professor à escola do gestor
+                professor.save()
+                messages.success(request, 'Professor cadastrado com sucesso!')
+                return redirect('core:inscricoes')
+        else:
+            form = ProfessorForm()
+        
+        return render(request, 'core/cadastro_professor.html', {
+            'form': form,
+            'escola': escola  # Passa a escola para o template
+        })
+    except Escola.DoesNotExist:
         messages.warning(request, 'Você precisa cadastrar sua escola primeiro.')
         return redirect('core:cadastro_escola')
-    
-    if request.method == 'POST':
-        form = ProfessorForm(request.POST)
-        if form.is_valid():
-            professor = form.save(commit=False)
-            professor.escola = request.user.escola
-            professor.save()
-            messages.success(request, 'Professor cadastrado com sucesso!')
-            return redirect('core:inscricoes')
-    else:
-        form = ProfessorForm()
-    
-    return render(request, 'core/cadastro_professor.html', {'form': form})
 
 @login_required
 def inscricoes(request):
-    escola = request.user.escola
-    professores = Professor.objects.filter(escola=escola).prefetch_related('alunos')
-    
-    return render(request, 'core/inscricoes.html', {
-        'professores': professores
-    })
+    try:
+        escola = Escola.objects.get(gestor=request.user)
+        professores = Professor.objects.filter(escola=escola).prefetch_related('alunos')
+        
+        context = {
+            'escola': escola,
+            'professores': professores
+        }
+        
+        return render(request, 'core/inscricoes.html', context)
+    except Escola.DoesNotExist:
+        messages.warning(request, 'Você precisa cadastrar sua escola primeiro.')
+        return redirect('core:cadastro_escola')
 
 class GestorChangeForm(UserChangeForm):
     password = None
@@ -263,10 +277,31 @@ def editar_aluno(request, aluno_id):
 
 @login_required
 def lista_todos_alunos(request):
-    alunos = Aluno.objects.filter(professor__escola=request.user.escola).select_related('professor')
-    return render(request, 'core/lista_todos_alunos.html', {
-        'alunos': alunos
-    })
+    if request.user.is_superuser:
+        # Para admin, mostra todos os alunos
+        alunos = Aluno.objects.all().select_related('professor')
+        context = {
+            'alunos': alunos,
+            'total_alunos': alunos.count()
+        }
+    else:
+        # Para gestor, mostra apenas alunos da sua escola
+        try:
+            escola = Escola.objects.get(gestor=request.user)
+            alunos = Aluno.objects.filter(
+                professor__escola=escola
+            ).select_related('professor')
+            
+            context = {
+                'escola': escola,
+                'alunos': alunos,
+                'total_alunos': alunos.count()
+            }
+        except Escola.DoesNotExist:
+            messages.warning(request, 'Você precisa cadastrar sua escola primeiro.')
+            return redirect('core:cadastro_escola')
+    
+    return render(request, 'core/lista_todos_alunos.html', context)
 
 @login_required
 def excluir_aluno(request, aluno_id):
