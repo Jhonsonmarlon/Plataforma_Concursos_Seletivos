@@ -30,4 +30,5 @@ urlpatterns = [
     path('gerenciamento/hierarquia/pdf/', views.exportar_hierarquia, name='exportar_hierarquia'),
     path('api/professores-por-escola/<int:escola_id>/', views.professores_por_escola, name='professores_por_escola'),
     path('escolas/', views.lista_escolas, name='lista_escolas'),
+    path('informacoes-gerais/', views.informacoes_gerais, name='informacoes_gerais'),
 ] 

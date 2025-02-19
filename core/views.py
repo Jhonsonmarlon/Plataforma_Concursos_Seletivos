@@ -727,3 +727,6 @@ def exportar_hierarquia(request):
     filename = f'Hierarquia_Sistema_{datetime.now().strftime("%Y%m%d_%H%M")}.pdf'
     response['Content-Disposition'] = f'inline; filename="{filename}"'
     return response
+
+def informacoes_gerais(request):
+    return render(request, 'core/informacoes_gerais.html')
